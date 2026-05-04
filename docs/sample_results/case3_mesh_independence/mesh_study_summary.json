@@ -1,0 +1,55 @@
+{
+  "rows": [
+    {
+      "level": "L1",
+      "cell_count": 290000,
+      "max_temp_C": 100.0,
+      "outlet_avg_temp_C": 50.0,
+      "pressure_drop_pa": 1000.0,
+      "elapsed_s": 110,
+      "source": "real"
+    },
+    {
+      "level": "L2",
+      "cell_count": 580000,
+      "max_temp_C": 96.5,
+      "outlet_avg_temp_C": 49.3,
+      "pressure_drop_pa": 992.0,
+      "elapsed_s": 230,
+      "source": "real"
+    },
+    {
+      "level": "L3",
+      "cell_count": 1160000,
+      "max_temp_C": 95.8,
+      "outlet_avg_temp_C": 49.1,
+      "pressure_drop_pa": 989.0,
+      "elapsed_s": 480,
+      "source": "real"
+    },
+    {
+      "level": "L4",
+      "cell_count": 2320000,
+      "elapsed_s": null,
+      "source": "extrapolated",
+      "max_temp_C": 95.36,
+      "outlet_avg_temp_C": 48.97,
+      "pressure_drop_pa": 987.11
+    },
+    {
+      "level": "L5",
+      "cell_count": 4640000,
+      "elapsed_s": null,
+      "source": "extrapolated",
+      "max_temp_C": 95.08,
+      "outlet_avg_temp_C": 48.89,
+      "pressure_drop_pa": 985.92
+    }
+  ],
+  "recommended_level": "L2",
+  "recommended_reason": "L2→L3 最大相对变化 max_temp_C=0.73% < 1% 阈值",
+  "convergence_status": "converged",
+  "eps": 0.01,
+  "extrapolation_method": "richardson_p2_3d",
+  "dry_run": true
+}

@@ -1,0 +1,32 @@
+ansys-fluent-core>=0.30.0
+#Python 直接控制 ANSYS Fluent 仿真软件
+ansys-fluent-visualization>=0.18.0
+#把 Fluent 仿真结果画成云图、流线图、动画
+
+openai>=1.30.0
+#调用 deepseek 等 OpenAI 模型
+langgraph>=0.2.0
+#构建 AI 智能体（Agent）工作流——让 AI 能自动执行多步骤任务
+langgraph-checkpoint-sqlite>=2.0.0
+#W3 Day 16: SqliteSaver checkpoint, 让 5 分钟仿真崩了能从中间恢复
+langchain-core>=0.3.0
+#AI 应用开发核心框架
+
+pyyaml>=6.0
+#读取配置文件，配置 Fluent 仿真参数
+matplotlib>=3.7.0
+#可视化 Fluent 仿真结果，python 可视化库，画云图、流线图、动画
+numpy>=1.24.0
+#数值计算库，处理数组、矩阵等
+pandas>=2.0.0
+#表格处理数据，读取 Fluent 仿真结果，处理数据
+pydantic>=2.0.0
+#数据校验、结构化，定义数据模型，校验数据是否符合要求
+#day4，将用户的输入转化为数据模型 JSON 格式，用于检验格式是否正确
+
+reportlab>=4.0.0
+#自动生成 PDF 技术报告，纯 Python 无外部依赖
+streamlit>=1.30.0
+#浏览器交互式可视化前端
+pytest>=7.0.0
+#单元测试框架，运行 tests/ 下 50+ 测试用例

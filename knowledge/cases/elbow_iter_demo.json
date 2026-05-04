@@ -1,0 +1,23 @@
+{
+  "case_id": "mixing_elbow_iter_demo",
+  "title": "冷热水混流多轮迭代演示",
+  "description": "mixing_elbow 案例 + 多轮迭代场景 (W3). outlet_limit=21°C, 初始 v=0.4 偏低出口超温, agent 自动加风速 3 轮.",
+  "tags": ["mixing_elbow", "iteration", "W3", "demo"],
+  "case_mode": "mixing_elbow",
+  "baseline_params": {
+    "chip_power_watts": 15.0,
+    "inlet_velocity_ms": 0.4,
+    "max_iterations": 80,
+    "chip_material": "silicon",
+    "limit_C": 85.0,
+    "outlet_limit_C": 21.0,
+    "mesh_quality": "medium"
+  },
+  "expected_kpi": {
+    "outlet_avg_temp_C_approx": 23.08,
+    "elapsed_seconds_approx": 40,
+    "within_spec_expected": false,
+    "expects_iter_rounds": 3
+  },
+  "good_for_query_keywords": ["mixing_elbow", "elbow", "出口", "迭代", "多轮", "W3", "0.4", "21度"]
+}

@@ -1,0 +1,37 @@
+{
+  "max_temp_K": 313.25,
+  "max_temp_C": 40.1,
+  "outlet_avg_temp_K": 293.85,
+  "outlet_avg_temp_C": 20.7,
+  "converged": true,
+  "iterations": 150,
+  "elapsed_seconds": 44.7,
+  "velocity_applied": true,
+  "params_echo": {
+    "chip_power_watts": 15.0,
+    "inlet_velocity_ms": 2.0,
+    "max_iterations": 150,
+    "chip_material": "silicon",
+    "limit_C": null,
+    "mesh_quality": "medium",
+    "outlet_limit_C": null
+  },
+  "limit_K": 358.15,
+  "limit_C": 85.0,
+  "within_spec": true,
+  "margin_C": 44.9,
+  "outlet_limit_C": 21.0,
+  "outlet_within_spec": true,
+  "outlet_margin_C": 0.3,
+  "active_constraints": [
+    "outlet"
+  ],
+  "failed_constraints": [],
+  "all_within_spec": true,
+  "summary_text": "==========================================================\nSciAgent-Fluent 仿真结果报告\n==========================================================\n\n[输入参数]\n  芯片功耗       : 15.0 W\n  入口风速       : 2.0 m/s\n  最大迭代步数   : 150\n  芯片材料       : silicon\n  网格档位       : medium\n  case_mode      : mixing_elbow\n\n[求解结果]\n  状态           : 收敛\n  实际迭代步数   : 150\n  全域最高温度   : 313.25 K  (40.10 °C)\n  出口平均温度   : 293.85 K  (20.70 °C)\n  耗时           : 44.7 秒\n\n[警戒线判定]\n  判定: 最高温度未超过 85 °C 警戒线, 余量 +44.90 °C, 设计安全。\n说明: 当前是 mixing-elbow 基准案例(冷热水混合管), 没有发热源, 最高温度被 hot-inlet 边界条件 313.15 K 钉住, 不会超过警戒线。W2 换共轭传热案例后, chip_power 才会真正驱动 max_temp 上升。\n\n生成时间: 2026-05-06 18:10:51\n==========================================================\n",
+  "generated_at": "2026-05-06T18:10:51",
+  "output_dir": "C:\\Users\\wmq30\\Desktop\\sciagent_fluent\\sciagent-fluent\\reports\\run_20260506_181051",
+  "contour_image_path": "C:\\Users\\wmq30\\Desktop\\sciagent_fluent\\sciagent-fluent\\reports\\run_20260506_181051\\temperature_contour.png",
+  "contour_skipped_reason": null,
+  "report_text_path": "C:\\Users\\wmq30\\Desktop\\sciagent_fluent\\sciagent-fluent\\reports\\run_20260506_181051\\report.txt"
+}

@@ -1,0 +1,36 @@
+# config.example.yaml
+# ====================
+# 这是配置模板, 进 git。
+# 复制为 config.yaml 后填上你的 key (config.yaml 已被 .gitignore 忽略, 不会泄露)。
+#
+#   cp config.example.yaml config.yaml          # macOS / Linux
+#   copy config.example.yaml config.yaml        # Windows cmd
+#   Copy-Item config.example.yaml config.yaml   # PowerShell
+#
+# 然后在 config.yaml 里把 sk-PUT_YOUR_KEY_HERE 替换成自己的 DeepSeek key。
+
+deepseek:
+  # 在 https://platform.deepseek.com/ 注册后, 控制台 → API keys → 创建。
+  # 形如 sk-71811850ee1a4eae83294c3e92627c81。
+  api_key: "sk-PUT_YOUR_KEY_HERE"
+
+  # DeepSeek 兼容 OpenAI 协议, base_url 走 /v1 即可, 客户端用 openai SDK。
+  base_url: "https://api.deepseek.com/v1"
+
+  # deepseek-chat = V3 通用对话, 也是本项目默认。如果要更强推理可换 deepseek-reasoner,
+  # 但延迟会从 ~3s 升到 ~15s, 对 W1 demo 体验有损。
+  model: "deepseek-chat"
+
+fluent:
+  # 一般不用动这两行 — PyFluent 会自动找最新装的 Ansys。
+  # 如果机器上有多个版本 (v221, v241, v261 ...) 想锁版本再启用:
+  # product_version: "26.1.0"
+  # executable_path: "C:/Program Files/ANSYS Inc/v261/fluent/ntbin/win64/fluent.exe"
+
+  # 并行核数。i9-13900H 这种 20 逻辑核的机器, 8 是甜点 (再多收益递减,
+  # 还会被 Student 版 4-way license 截断)。低端 CPU 调到 4。
+  processor_count: 8
+
+  # show_gui: true  → Fluent 主窗口可见, 调试用, 能看到求解过程。
+  # show_gui: false → 后台跑, 演示视频里更干净。
+  show_gui: true

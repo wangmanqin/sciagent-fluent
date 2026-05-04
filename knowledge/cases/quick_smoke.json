@@ -1,0 +1,20 @@
+{
+  "case_id": "quick_smoke_test",
+  "title": "快速冒烟测试 (元素少, 迭代少)",
+  "description": "用最少迭代步数验证整条链路通. 不追求物理精度, 答辩前自检用.",
+  "tags": ["smoke", "quick", "test"],
+  "case_mode": "manifold_cht",
+  "baseline_params": {
+    "chip_power_watts": 10.0,
+    "inlet_velocity_ms": 1.0,
+    "max_iterations": 30,
+    "chip_material": "silicon",
+    "limit_C": 1500.0,
+    "mesh_quality": "coarse"
+  },
+  "expected_kpi": {
+    "elapsed_seconds_approx": 20,
+    "within_spec_expected": true
+  },
+  "good_for_query_keywords": ["快速", "smoke", "测试", "冒烟", "试试", "随便"]
+}

@@ -1,0 +1,22 @@
+{
+  "case_id": "manifold_low_power_15w",
+  "title": "排气歧管低功率芯片散热",
+  "description": "Ansys exhaust_manifold 案例 + chip_power=15W 在 solid_up zone. 适合演示 W2 chip_power 真生效, 温度上涨幅度可见但不极端.",
+  "tags": ["manifold", "low_power", "demo", "chip_15w"],
+  "case_mode": "manifold_cht",
+  "baseline_params": {
+    "chip_power_watts": 15.0,
+    "inlet_velocity_ms": 1.0,
+    "max_iterations": 150,
+    "chip_material": "silicon",
+    "limit_C": 1500.0,
+    "mesh_quality": "medium"
+  },
+  "expected_kpi": {
+    "max_temp_K_approx": 970,
+    "max_temp_C_approx": 697,
+    "elapsed_seconds_approx": 40,
+    "within_spec_expected": true
+  },
+  "good_for_query_keywords": ["管壁", "排气", "低功率", "15", "15W", "demo", "演示", "manifold"]
+}

@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SciAgent-Fluent 框架总览</title>
+<style>
+  :root {
+    --c-llm: #4f8cff;
+    --c-llm-bg: #eaf2ff;
+    --c-py: #2bb673;
+    --c-py-bg: #e6f7ee;
+    --c-fluent: #ff8a3c;
+    --c-fluent-bg: #fff1e3;
+    --c-out: #a259d9;
+    --c-out-bg: #f3e8ff;
+    --c-bg: #f7f8fa;
+    --c-card: #ffffff;
+    --c-text: #1f2933;
+    --c-mute: #5b6b7d;
+    --c-line: #d8dee6;
+    --c-code-bg: #1e2330;
+    --c-code-text: #e6e8ec;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--c-bg);
+    color: var(--c-text);
+    line-height: 1.65;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 32px 24px 80px; }
+  header {
+    text-align: center;
+    padding: 24px 0 12px;
+  }
+  header h1 {
+    margin: 0 0 8px;
+    font-size: 32px;
+    letter-spacing: 0.5px;
+  }
+  header p.sub { color: var(--c-mute); margin: 0; font-size: 16px; }
+
+  .progress {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin: 24px 0 8px;
+    flex-wrap: wrap;
+  }
+  .day-pill {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: #e8edf3;
+    color: var(--c-mute);
+    font-size: 13px;
+  }
+  .day-pill.done { background: var(--c-py); color: white; }
+  .day-pill.todo { background: white; border: 1px dashed var(--c-line); }
+
+  /* ---- Architecture flow diagram ---- */
+  section.flow {
+    background: var(--c-card);
+    border-radius: 14px;
+    padding: 28px 24px;
+    margin: 28px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  section.flow h2 { margin-top: 0; }
+  .flow-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+    gap: 8px;
+    align-items: stretch;
+    margin-top: 18px;
+  }
+  .stage {
+    border-radius: 10px;
+    padding: 16px 14px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+    border: 2px solid transparent;
+  }
+  .stage:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  }
+  .stage.active { border-color: currentColor; }
+  .stage h3 { margin: 0 0 6px; font-size: 15px; }
+  .stage .who { font-size: 12px; color: var(--c-mute); margin-bottom: 6px; }
+  .stage code { font-size: 12px; }
+  .stage.input { background: #fff8d6; }
+  .stage.llm { background: var(--c-llm-bg); color: var(--c-llm); }
+  .stage.py { background: var(--c-py-bg); color: var(--c-py); }
+  .stage.fluent { background: var(--c-fluent-bg); color: var(--c-fluent); }
+  .stage.out { background: var(--c-out-bg); color: var(--c-out); }
+  .stage code { background: rgba(0,0,0,0.05); padding: 1px 4px; border-radius: 3px; }
+
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-mute);
+    font-size: 20px;
+  }
+  .arrow span { font-size: 11px; display: block; }
+  .arrow .label {
+    writing-mode: horizontal-tb;
+    background: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--c-line);
+    color: var(--c-mute);
+    font-family: ui-monospace, "Consolas", monospace;
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+  .arrow-col { flex-direction: column; gap: 4px; }
+
+  @media (max-width: 900px) {
+    .flow-grid { grid-template-columns: 1fr; }
+    .arrow { transform: rotate(90deg); padding: 6px 0; }
+  }
+
+  /* ---- Cards ---- */
+  .file-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 16px 0 0;
+  }
+  @media (max-width: 800px) { .file-grid { grid-template-columns: 1fr; } }
+  .file-card {
+    background: var(--c-card);
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-left: 4px solid var(--c-line);
+    cursor: pointer;
+    transition: box-shadow .15s ease;
+  }
+  .file-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+  .file-card.day1 { border-left-color: var(--c-fluent); }
+  .file-card.day2 { border-left-color: var(--c-fluent); }
+  .file-card.day3 { border-left-color: var(--c-py); }
+  .file-card.day4 { border-left-color: var(--c-llm); }
+  .file-card.day5 { border-left-color: var(--c-out); }
+  .file-card.day6 { border-left-color: #14b8a6; }
+  .file-card h3 { margin: 0 0 4px; font-size: 16px; }
+  .file-card .path {
+    font-family: ui-monospace, "Consolas", monospace;
+    font-size: 12px;
+    color: var(--c-mute);
+    margin-bottom: 8px;
+  }
+  .file-card .summary { font-size: 14px; color: var(--c-text); }
+  .file-card .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: #f0f3f8;
+    color: var(--c-mute);
+    margin-right: 4px;
+    margin-top: 6px;
+  }
+
+  /* ---- Modal / Detail panel ---- */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(20,30,50,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 24px;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--c-card);
+    border-radius: 14px;
+    max-width: 920px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding: 28px 32px;
+    position: relative;
+  }
+  .modal h2 { margin-top: 0; font-size: 22px; }
+  .modal .path-bar {
+    font-family: ui-monospace, "Consolas", monospace;
+    background: #f0f3f8;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--c-mute);
+    margin-bottom: 18px;
+    word-break: break-all;
+  }
+  .modal h4 { margin-top: 22px; margin-bottom: 6px; font-size: 14px; color: var(--c-mute); text-transform: uppercase; letter-spacing: 1px; }
+  .modal h3 { margin-top: 18px; margin-bottom: 8px; font-size: 16px; }
+  .modal pre {
+    background: var(--c-code-bg);
+    color: var(--c-code-text);
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 12.5px;
+    line-height: 1.55;
+    margin: 8px 0;
+  }
+  .modal code { font-family: ui-monospace, "Consolas", monospace; }
+  .modal ul { padding-left: 20px; margin: 6px 0; }
+  .modal ul li { margin-bottom: 6px; }
+  .close-btn {
+    position: absolute;
+    top: 12px; right: 16px;
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    color: var(--c-mute);
+  }
+  .close-btn:hover { color: var(--c-text); }
+
+  table.func {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 8px 0;
+  }
+  table.func th, table.func td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--c-line);
+    vertical-align: top;
+  }
+  table.func th { background: #f6f8fb; font-weight: 600; color: var(--c-mute); font-size: 12px; }
+  table.func code { background: rgba(0,0,0,0.05); padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+
+  /* ---- Decisions ---- */
+  .decisions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+  }
+  .dec-card {
+    background: white;
+    border-radius: 10px;
+    padding: 14px 16px;
+    border-top: 3px solid var(--c-llm);
+    font-size: 13.5px;
+  }
+  .dec-card .num { color: var(--c-llm); font-weight: 700; font-size: 12px; }
+  .dec-card h4 { margin: 4px 0 6px; font-size: 14.5px; }
+  .dec-card p { margin: 0; color: var(--c-mute); font-size: 12.5px; }
+
+  /* ---- Demo trace ---- */
+  .trace-step {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--c-line);
+  }
+  .trace-step:last-child { border-bottom: none; }
+  .trace-step .num {
+    background: var(--c-py);
+    color: white;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+  }
+  .trace-step .text strong { font-size: 14px; }
+  .trace-step .text code {
+    display: inline-block;
+    background: var(--c-code-bg);
+    color: var(--c-code-text);
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    font-size: 12px;
+    font-family: ui-monospace, "Consolas", monospace;
+  }
+
+  footer { text-align: center; color: var(--c-mute); font-size: 12.5px; margin-top: 40px; }
+
+  /* color helpers used in modal */
+  .pill {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    font-size: 11px; margin-right: 4px;
+  }
+  .pill.api { background: #eaf2ff; color: var(--c-llm); }
+  .pill.fb { background: #ffe7e0; color: #d04a2a; }
+  .pill.test { background: #e6f7ee; color: var(--c-py); }
+  .pill.cli { background: #fff1e3; color: var(--c-fluent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>SciAgent-Fluent 框架总览</h1>
+  <p class="sub">一句中文 → DeepSeek 解析 → PyFluent 仿真 → 温度结果（W1 MVP）</p>
+  <div class="progress">
+    <span class="day-pill done">Day 0 · 环境</span>
+    <span class="day-pill done">Day 1 · 启动验证</span>
+    <span class="day-pill done">Day 2 · 端到端基线</span>
+    <span class="day-pill done">Day 3 · 函数化封装</span>
+    <span class="day-pill done">Day 4 · LLM 解析器</span>
+    <span class="day-pill done">Day 5 · 结果分析</span>
+    <span class="day-pill done">Day 6 · LangGraph</span>
+    <span class="day-pill todo">Day 7 · 演示</span>
+  </div>
+</header>
+
+<!-- ============= 架构总览 ============= -->
+<section class="flow">
+  <h2>① 数据流总览</h2>
+  <p style="color:var(--c-mute);margin-top:0">点击任一阶段查看对应代码细节。</p>
+
+  <!-- LangGraph orchestrator 横条 -->
+  <div style="background:linear-gradient(90deg, #14b8a6 0%, #06b6d4 100%); color:white; padding:10px 18px; border-radius:10px; margin-bottom:14px; font-size:14px; cursor:pointer; box-shadow:0 2px 6px rgba(20,184,166,0.25);" onclick="openModal('day6')">
+    <strong>🕸️ Day 6 · LangGraph orchestrator</strong> &nbsp;
+    <span style="opacity:0.85">把下面三个节点串起来 · <code style="background:rgba(255,255,255,0.2);padding:1px 5px;border-radius:3px">python run.py --query "..."</code></span>
+  </div>
+
+  <div class="flow-grid">
+    <div class="stage input" onclick="openModal('input')">
+      <h3>👤 用户中文输入</h3>
+      <div class="who">自然语言</div>
+      "芯片 15W，风速 2 m/s，跑 200 步"
+    </div>
+
+    <div class="arrow arrow-col"><div class="label">str</div>→</div>
+
+    <div class="stage llm" onclick="openModal('day4')">
+      <h3>🧠 [intent] 节点</h3>
+      <div class="who">DeepSeek + Pydantic</div>
+      自然语言 → 结构化 JSON
+    </div>
+
+    <div class="arrow arrow-col"><div class="label">params dict</div>→</div>
+
+    <div class="stage py" onclick="openModal('day3')">
+      <h3>⚙️ [simulate] 节点</h3>
+      <div class="who">run_simulation()</div>
+      JSON → 调 PyFluent
+    </div>
+
+    <div class="arrow arrow-col"><div class="label">gRPC</div>→</div>
+
+    <div class="stage fluent" onclick="openModal('day2')">
+      <h3>🔥 Fluent 进程</h3>
+      <div class="who">CFD 求解器</div>
+      迭代 → 计算温度场
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:18px;color:var(--c-mute)">
+    ↓ <span style="font-family:monospace;font-size:12px">活的 session + 数字 dict</span> ↓
+  </div>
+
+  <div style="margin-top:14px;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch">
+    <div class="stage out" onclick="openModal('day5')">
+      <h3>📈 result_analyzer</h3>
+      <div class="who">analyze(session, params, summary)</div>
+      数字 → PNG 云图 + 中文报告 + JSON
+    </div>
+    <div class="arrow arrow-col"><div class="label">files</div>→</div>
+    <div class="stage out" onclick="openModal('output')" style="background:#fff8d6;color:#a87f00">
+      <h3>📁 reports/run_&lt;时间&gt;/</h3>
+      <div class="who">磁盘产物</div>
+      <code>temperature_contour.png</code><br>
+      <code>report.txt</code> · <code>result.json</code>
+    </div>
+  </div>
+</section>
+
+<!-- ============= 文件卡片 ============= -->
+<section class="flow">
+  <h2>② 六个核心文件</h2>
+  <p style="color:var(--c-mute);margin-top:0">点击卡片查看每个文件的功能、关键函数、踩坑点。</p>
+
+  <div class="file-grid">
+    <div class="file-card day1" onclick="openModal('day1')">
+      <h3>🔌 Day 1 · 环境验证</h3>
+      <div class="path">day1_verify.py</div>
+      <div class="summary">最小可行启动测试：能不能 import PyFluent，能不能起 Fluent 进程，能不能干净退出。</div>
+      <span class="tag">PyFluent</span><span class="tag">环境</span><span class="tag">3 个 [OK]</span>
+    </div>
+
+    <div class="file-card day2" onclick="openModal('day2')">
+      <h3>🧪 Day 2 · 端到端基线</h3>
+      <div class="path">day2_baseline.py</div>
+      <div class="summary">用 mixing-elbow 官方案例跑通"启动→读案例→求解→拿温度→退出"全链路。</div>
+      <span class="tag">mixing-elbow</span><span class="tag">流水账</span><span class="tag">最高温度</span>
+    </div>
+
+    <div class="file-card day3" onclick="openModal('day3')">
+      <h3>📦 Day 3 · 函数化封装</h3>
+      <div class="path">tools/fluent_wrapper.py</div>
+      <div class="summary">把 Day 2 的脚本包成 <code>run_simulation(params)</code> 函数，参数化、能反复调。</div>
+      <span class="tag">run_simulation</span><span class="tag">分层参数</span><span class="tag">回退三连</span>
+    </div>
+
+    <div class="file-card day4" onclick="openModal('day4')">
+      <h3>🤖 Day 4 · LLM 意图解析</h3>
+      <div class="path">agents/intent_parser.py</div>
+      <div class="summary">DeepSeek 把中文 → JSON，Pydantic 校验，失败让模型自我修正再试。</div>
+      <span class="tag">DeepSeek</span><span class="tag">Pydantic</span><span class="tag">JSON-only</span>
+    </div>
+
+    <div class="file-card day5" onclick="openModal('day5')">
+      <h3>📈 Day 5 · 结果分析</h3>
+      <div class="path">agents/result_analyzer.py</div>
+      <div class="summary">数字 dict → 温度云图 PNG + 中文报告 + 警戒线判定 JSON，落到 reports/。</div>
+      <span class="tag">analyzer hook</span><span class="tag">模板 (不调 LLM)</span><span class="tag">85°C 警戒线</span>
+    </div>
+
+    <div class="file-card day6" onclick="openModal('day6')">
+      <h3>🕸️ Day 6 · LangGraph 串联</h3>
+      <div class="path">graph/pipeline.py + run.py</div>
+      <div class="summary">三个节点 intent → simulate → report，一条 <code>python run.py --query "..."</code> 端到端。</div>
+      <span class="tag">StateGraph</span><span class="tag">--dry-run</span><span class="tag">checkpoint-ready</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============= 五大架构决策 ============= -->
+<section class="flow">
+  <h2>③ 五大架构决策（答辩 answer-script）</h2>
+  <p style="color:var(--c-mute);margin-top:0">写在 <code>设计思路.md §6</code>，一切 PR / 重构都要对照这五条。</p>
+
+  <div class="decisions">
+    <div class="dec-card">
+      <div class="num">DECISION 1</div>
+      <h4>LLM 只出 JSON</h4>
+      <p>DeepSeek 永远不写 Python，只输出受限 schema。降低幻觉面，解耦 prompt 和 PyFluent API 变化。</p>
+    </div>
+    <div class="dec-card">
+      <div class="num">DECISION 2</div>
+      <h4>分层单位</h4>
+      <p>用户层用 W、m/s（物理直觉）；Fluent 层用 W/m³、Pa（工程）。换算放 wrapper，不放 LLM。</p>
+    </div>
+    <div class="dec-card">
+      <div class="num">DECISION 3</div>
+      <h4>Baseline-first</h4>
+      <p>用 Ansys 官方 conjugate-heat-transfer 教程做几何/网格基线，只换参数。W1-W4 完全不动 CAD。</p>
+    </div>
+    <div class="dec-card">
+      <div class="num">DECISION 4</div>
+      <h4>状态机 + 检查点</h4>
+      <p>LangGraph 节点：intent → retrieve → setup → run → analyze → 迭代/输出。每节点持久化状态。</p>
+    </div>
+    <div class="dec-card">
+      <div class="num">DECISION 5</div>
+      <h4>每层都有 fallback</h4>
+      <p>modern API 失败 → TUI；JSON 失败 → 重试；仿真发散 → 回滚。可靠性 &gt; 性能。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============= 一句话从输入到输出的 trace ============= -->
+<section class="flow">
+  <h2>④ 一句话的旅程（trace）</h2>
+  <p style="color:var(--c-mute);margin-top:0">假设你输入：<strong>"芯片 15 瓦，风速 2 米每秒，跑 200 步"</strong></p>
+
+  <div class="trace-step">
+    <div class="num">1</div>
+    <div class="text">
+      <strong>用户终端</strong><br>
+      <code>python -m agents.intent_parser "芯片 15 瓦，风速 2 米每秒，跑 200 步"</code>
+    </div>
+  </div>
+  <div class="trace-step">
+    <div class="num">2</div>
+    <div class="text">
+      <strong>parse_intent()</strong> 读 config.yaml，构造 OpenAI 兼容 client，向 DeepSeek 发 system prompt + user 消息。<br>
+      <code>response_format={"type": "json_object"}</code> 强制 JSON 输出
+    </div>
+  </div>
+  <div class="trace-step">
+    <div class="num">3</div>
+    <div class="text">
+      <strong>DeepSeek 返回</strong>：<br>
+      <code>{"chip_power_watts": 15.0, "inlet_velocity_ms": 2.0, "max_iterations": 200}</code>
+    </div>
+  </div>
+  <div class="trace-step">
+    <div class="num">4</div>
+    <div class="text">
+      <strong>SimulationParams(...)</strong> Pydantic 校验：类型对、范围对、没多余键。<br>
+      失败 → 把错误塞回对话，让模型自我修正再试一次。
+    </div>
+  </div>
+  <div class="trace-step">
+    <div class="num">5</div>
+    <div class="text">
+      <strong>run_simulation(params)</strong>：launch_fluent → read_case → 应用速度 → hybrid initialize → iterate(200)<br>
+      <code>session.setup.boundary_conditions.velocity_inlet["cold-inlet"].momentum.velocity = 2.0</code>
+    </div>
+  </div>
+  <div class="trace-step">
+    <div class="num">6</div>
+    <div class="text">
+      <strong>查询温度</strong>：通过 TUI <code>/report/volume-integrals/maximum</code> 写到临时文件，正则抠数字。<br>
+      为什么用 TUI？API 在 0.20-0.38 之间签名变化频繁，TUI 20 年没变过。
+    </div>
+  </div>
+  <div class="trace-step">
+    <div class="num">7</div>
+    <div class="text">
+      <strong>analyzer hook (Day 5)</strong>：在 <code>session.exit()</code> 之前，<code>run_simulation</code> 调 <code>result_analyzer.analyze(session, params, partial_result)</code>。<br>
+      → 抓温度云图 PNG（modern API → TUI 双轨 fallback）<br>
+      → 拼中文报告：警戒线 85°C 判定，写 <code>report.txt</code><br>
+      → 存 <code>result.json</code> 给 Day 6 LangGraph 下游用<br>
+      <code>reports/run_20260425_214235/{contour.png, report.txt, result.json}</code>
+    </div>
+  </div>
+  <div class="trace-step">
+    <div class="num">8</div>
+    <div class="text">
+      <strong>finally 块</strong>：无论成败必 <code>session.exit()</code>。学生版 license 槽位极少，关不掉就一直占着。
+    </div>
+  </div>
+  <div class="trace-step">
+    <div class="num">9</div>
+    <div class="text">
+      <strong>返回完整 result dict</strong>（数字 + analyzer 加的字段）：<br>
+      <code>{"max_temp_K": 313.15, "outlet_avg_temp_K": 295.7, "within_spec": True, "margin_C": 45.0, "contour_image_path": ".../contour.png", "report_text_path": ".../report.txt", ...}</code>
+    </div>
+  </div>
+</section>
+
+<footer>
+  W1 MVP 已完成 ✓ &nbsp;Day 7 待办：README + 录屏 + 打磨。<br>
+  生成于 {{TODAY}}
+</footer>
+
+</div>
+
+<!-- ============= Modal ============= -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal">
+    <button class="close-btn" onclick="closeModal()">×</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<script>
+const DETAILS = {
+  input: {
+    title: "👤 用户输入层",
+    path: "stdin / CLI / 未来：Web UI",
+    sections: [
+      { h: "做什么", body: `
+        <p>用户用<strong>自然语言（中文）</strong>说他想跑什么仿真。这是整个系统的入口。</p>
+        <p>当前形态：命令行 <code>python -m agents.intent_parser "..."</code></p>
+        <p>未来形态（W3+）：Web 前端、多轮对话（"温度太高了，降一下功耗"）。</p>
+      `},
+      { h: "为什么不让用户直接填 JSON?", body: `
+        <ul>
+          <li>用户是工程师，脑子里是"15 瓦、2 米每秒"，不是"15.0, 2.0"。让 LLM 做翻译，比让用户学 schema 友好。</li>
+          <li>这正是项目的卖点：把 CFD 工程师的认知负担从"软件操作"降到"物理表述"。</li>
+        </ul>
+      `},
+    ]
+  },
+
+  day1: {
+    title: "🔌 Day 1 · PyFluent 环境验证",
+    path: "day1_verify.py",
+    sections: [
+      { h: "目的", body: `
+        <p>最小可行测试：<strong>3 个 [OK]</strong> 就算通过。</p>
+        <ol>
+          <li><code>import ansys.fluent.core</code> 不报错 → 包装好了</li>
+          <li><code>pyfluent.launch_fluent(...)</code> 能起 Fluent 进程 → license 通了</li>
+          <li><code>session.exit()</code> 能干净退出 → 没有僵尸进程</li>
+        </ol>
+        <p>这一步的设计哲学：<strong>把环境问题和业务问题分开排查</strong>。环境通了再写业务代码，出错时不会两头乱抓。</p>
+      `},
+      { h: "关键代码", body: `<pre>session = pyfluent.launch_fluent(
+    mode="solver",         # 只要求解器
+    ui_mode="no_gui",      # 无界面，被脚本驱动必须这样
+    dimension=3,           # 3D
+    precision="double",    # 双精度
+    processor_count=2,     # 2 核（学生版上限 4）
+)</pre>`},
+      { h: "分阶段返回码（防御性编程）", body: `
+        <ul>
+          <li><code>return 0</code> — 全过</li>
+          <li><code>return 1</code> — Step 1 (import) 失败</li>
+          <li><code>return 2</code> — Step 2 (launch) 失败</li>
+        </ul>
+        <p>不同失败用不同退出码区分，shell 脚本 / CI 能根据退出码精确知道卡在哪。</p>
+      `},
+      { h: "三个常见错误的预判", body: `
+        <ul>
+          <li>License not available（学生版首次必须先 GUI 过 EULA）</li>
+          <li>找不到 Fluent 路径（设 <code>AWP_ROOT241</code>）</li>
+          <li>版本太旧（PyFluent 要 ≥ 2023R2）</li>
+        </ul>
+        <p>把答案打在屏幕上，用户不用 Google。</p>
+      `},
+    ]
+  },
+
+  day2: {
+    title: "🧪 Day 2 · 端到端基线",
+    path: "day2_baseline.py",
+    sections: [
+      { h: "做什么", body: `
+        <p>用 PyFluent 官方第一个 tutorial 案例 <strong>mixing-elbow</strong>（冷热水弯管混合）跑通完整链路：</p>
+        <p style="font-family:monospace;background:#f0f3f8;padding:8px;border-radius:6px;">
+          下载案例 → 启动 Fluent → 读 .cas.h5 → 网格检查 → hybrid 初始化 → 迭代 100 步 → TUI 查最高温度 → 退出
+        </p>
+        <p>成功标志：终端打印 <code>[OK] 最高温度 = XXX K</code>，数值在 290-360 K 之间。</p>
+      `},
+      { h: "为什么不直接用芯片散热（CHT）？", body: `
+        <ul>
+          <li>mixing-elbow 是<strong>官方第一个 tutorial</strong>，几乎一定能跑通。</li>
+          <li>它有温度场（冷+热水混合），正好满足"输出温度"。</li>
+          <li>Day 2 验证<strong>流程</strong>，不解决<strong>业务</strong>。Day 3 包装成函数后，再换芯片散热案例。</li>
+        </ul>
+        <blockquote style="border-left:3px solid var(--c-fluent);padding-left:12px;color:var(--c-mute);font-size:13px">
+          工程经验：先跑通最小最稳的官方示例，再替换业务案例。把"环境问题"和"业务问题"分开排查。
+        </blockquote>
+      `},
+      { h: "关键模式：modern API + TUI 双轨", body: `
+        <p>每个工具函数（<code>_read_case</code> / <code>_check_mesh</code> / <code>_initialize</code> / <code>_iterate</code>）都长这样：</p>
+        <pre>def _read_case(session, path):
+    try:
+        session.file.read_case(file_name=path)   # modern API（新版本）
+        return
+    except (AttributeError, TypeError):
+        pass
+    session.tui.file.read_case(path.replace("\\\\", "/"))  # TUI 兜底</pre>
+        <p>原因：PyFluent 0.20→0.38 之间 API 签名变化大，但 TUI 命令 20 年没动。<strong>新接口稳就用，不稳就退到 TUI</strong>。</p>
+      `},
+      { h: "查温度为什么用 TUI 而不是 Python API？", body: `
+        <ul>
+          <li>PyFluent 的 <code>field_data</code>、<code>report_definitions</code> 在版本之间签名飘忽不定。</li>
+          <li>TUI <code>/report/volume-integrals/maximum</code> 命令把结果写到文件，再用<strong>正则抠数字</strong>。</li>
+          <li>正则：<code>-?\\d+\\.\\d+(?:[eE][-+]?\\d+)?</code>（可选负号、科学计数法）。</li>
+        </ul>
+      `},
+      { h: "finally 块的硬规则", body: `
+        <p>无论成败必跑：<code>session.exit()</code>。学生版 license 槽位极少，关不掉就一直占着，下一次根本起不来。</p>
+      `},
+    ]
+  },
+
+  day3: {
+    title: "📦 Day 3 · 函数化封装",
+    path: "tools/fluent_wrapper.py",
+    sections: [
+      { h: "为什么要这一步？", body: `
+        <p>Day 2 是<strong>流水账脚本</strong>，跑完就退出。这种代码没法被别人调，也没法在循环里跑多次。</p>
+        <p>Day 3 把它包成函数：</p>
+        <pre>result = run_simulation({
+    "chip_power_watts": 15.0,
+    "inlet_velocity_ms": 2.0,
+    "max_iterations": 200,
+})
+# → {"max_temp_K": 313.15, "outlet_avg_temp_K": 295.7, ...}</pre>
+        <p>之后：</p>
+        <ul>
+          <li>Day 4 的 DeepSeek 把中文翻译成 params dict，直接喂给它</li>
+          <li>Day 5 的 result_analyzer 接 result dict 出云图</li>
+          <li>Day 6 的 LangGraph 把它当作 setup→run 节点</li>
+        </ul>
+        <p><strong>函数化是把"一次性 demo"变成"基础设施零件"的关键一步。</strong></p>
+      `},
+      { h: "公开 API 的契约", body: `
+        <table class="func">
+          <tr><th>Key</th><th>类型</th><th>含义</th></tr>
+          <tr><td><code>chip_power_watts</code></td><td>float ≥ 0</td><td>芯片功耗（mixing-elbow 阶段不施加，仅记录；W2 换 CHT 后会换算成 W/m³）</td></tr>
+          <tr><td><code>inlet_velocity_ms</code></td><td>float &gt; 0</td><td>入口风速。只设到 cold-inlet（hot-inlet 保留默认）</td></tr>
+          <tr><td><code>max_iterations</code></td><td>int 10-2000</td><td>迭代步数</td></tr>
+        </table>
+        <h4 style="margin-top:14px">返回 result dict</h4>
+        <table class="func">
+          <tr><th>Key</th><th>含义</th></tr>
+          <tr><td><code>max_temp_K</code></td><td>全域最高温度（mixing-elbow 上恒等于 hot-inlet = 313.15 K）</td></tr>
+          <tr><td><code>outlet_avg_temp_K</code></td><td>出口质量加权平均温度（这个才会随入口速度变）</td></tr>
+          <tr><td><code>converged</code></td><td>简化版：跑完且 max_T 在 200-500K → True</td></tr>
+          <tr><td><code>velocity_applied</code></td><td>速度有没有真的设进去（modern API / TUI 都失败 → False）</td></tr>
+          <tr><td><code>elapsed_seconds</code></td><td>全流程耗时</td></tr>
+        </table>
+      `},
+      { h: "🔥 关键踩坑：为什么要 outlet_avg_temp_K？", body: `
+        <p>第一版自测试用 <code>max_temp_K</code> 比较"参数有没有生效"，结果两次跑都是 313.15 K — <strong>看起来参数没生效，其实是物理特性</strong>：</p>
+        <ul>
+          <li>mixing-elbow 的最高温度永远在 hot-inlet 边界本身（入口固定 313.15 K）</li>
+          <li>不管 cold-inlet 怎么变，max 永远定在那里 — 这是物理而非 bug</li>
+          <li>出口平均温度才反映"冷热混合"，会随入口速度变化</li>
+        </ul>
+        <p>所以 self-test 用 <code>outlet_avg_temp_K</code> 做 PASS 判定，max_T 仍返回（W1 验收要"输出最高温度"，答辩时要讲）。</p>
+      `},
+      { h: "为什么 chip_power_watts 现在不施加？", body: `
+        <p>mixing-elbow 没有"芯片"几何 — 它就是一根管子。所以 Day 3 阶段：</p>
+        <ul>
+          <li>参数原样回传到 <code>result["params_echo"]</code></li>
+          <li>占住"未来要换算 W → W/m³"的位置（<code>_record_chip_power</code>）</li>
+          <li>W2 换 conjugate-heat-transfer 案例后，这里改成：</li>
+        </ul>
+        <pre>q_vol = power_watts / chip_volume_m3  # W/m^3
+session.setup.cell_zone_conditions.fluid['chip-die']\\
+    .source_terms.energy = q_vol</pre>
+        <p>"<strong>接口先稳，案例后换</strong>" — 让 Day 4 的 DeepSeek 现在就能学正确的 schema。</p>
+      `},
+      { h: "三层 fallback 设速度", body: `
+        <pre>def _apply_inlet_velocity(session, vmag):
+    # 路线 a: modern settings API
+    bc.velocity_inlet["cold-inlet"].momentum.velocity = vmag   # 写法 1
+    bc.velocity_inlet["cold-inlet"].vmag = vmag                 # 写法 2
+    bc.velocity_inlet["cold-inlet"].set_state({"vmag": vmag})  # 写法 3
+    # 路线 b: TUI 命令（两种 prompt 序列）
+    # 路线 c: 都失败 → 只 warn，用案例默认值</pre>
+        <p>"<strong>宁可参数没生效，也别整个流程崩</strong>" — 架构决策 #5。</p>
+      `},
+      { h: "自测试", body: `
+        <p><code>python -m tools.fluent_wrapper</code> 跑两次：</p>
+        <ul>
+          <li>Run 1: v=0.4 m/s, iter=80</li>
+          <li>Run 2: v=1.5 m/s, iter=120</li>
+          <li>判定：两次 outlet_avg_T <strong>不同</strong>，且都在 290-315 K 范围内 → PASS</li>
+        </ul>
+        <p>实测：296.23 K → 294.08 K。证明 cold-inlet 速度参数确实驱动了仿真。</p>
+      `},
+    ]
+  },
+
+  day4: {
+    title: "🤖 Day 4 · LLM 意图解析",
+    path: "agents/intent_parser.py",
+    sections: [
+      { h: "做什么", body: `
+        <p>把一句中文 → run_simulation() 能直接吃的 params dict。</p>
+        <pre>parse_intent("芯片功耗 15W, 风速 2 m/s, 跑 200 步")
+# → {"chip_power_watts": 15.0, "inlet_velocity_ms": 2.0, "max_iterations": 200}
+
+parse_intent("5kW 的芯片，给我吹 50 cm/s 的风")
+# → {"chip_power_watts": 5000.0, "inlet_velocity_ms": 0.5, "max_iterations": 150}
+# (kW → W 乘 1000；cm/s → m/s 除 100；没说步数 → 默认 150)
+
+parse_intent("帮我跑个仿真")
+# → {"chip_power_watts": 10.0, "inlet_velocity_ms": 1.0, "max_iterations": 150}
+# (全部默认值)</pre>
+      `},
+      { h: "🔑 最关键的设计：LLM 只出 JSON，绝不写代码", body: `
+        <p>架构决策 #1：</p>
+        <ul>
+          <li>不让 DeepSeek 写 Python 调 PyFluent — 那样幻觉成本高、调试困难。</li>
+          <li>只让它做"自然语言 → 受限 schema JSON"这种<strong>很窄</strong>的任务，错的空间最小。</li>
+          <li>JSON 出来后由 Pydantic 强校验；失败就把错误塞回对话让 LLM 自己改。</li>
+        </ul>
+        <p>这就是为什么这个项目对幻觉很鲁棒 — 模型能错的地方很少。</p>
+      `},
+      { h: "Pydantic 校验比手写 if/else 强在哪？", body: `
+        <table class="func">
+          <tr><th>问题场景</th><th>Pydantic 处理</th></tr>
+          <tr><td>类型乱（"15.0" 字符串而非 15.0）</td><td>自动强转</td></tr>
+          <tr><td>多余字段（多塞 "explanation"）</td><td><code>extra="forbid"</code> 直接拒</td></tr>
+          <tr><td>缺字段</td><td>用 Field 默认值填</td></tr>
+          <tr><td>嵌套（{"params": {...}}）</td><td>校验失败 → 触发重试</td></tr>
+          <tr><td>越界（功耗 -5 瓦）</td><td><code>ge=0.0</code> 拒绝</td></tr>
+        </table>
+        <p>W2 加新字段（比如 ambient_temperature）时，<strong>只改 SimulationParams 一处</strong>。</p>
+      `},
+      { h: "System prompt 的写法（few-shot）", body: `
+        <p>给 LLM 的指令包含三件事：</p>
+        <ol>
+          <li>角色 + 任务（CFD 仿真参数解析器，只输出 JSON）</li>
+          <li>schema 描述（三个键，类型，含义）</li>
+          <li>单位换算约定（kW→W、cm/s→m/s、km/h→m/s）</li>
+          <li>三个 few-shot 示例</li>
+        </ol>
+        <blockquote style="border-left:3px solid var(--c-llm);padding-left:12px;color:var(--c-mute);font-size:13px">
+          "示例（few-shot）写进 system prompt，LLM 看着例子学比看描述准。"
+        </blockquote>
+      `},
+      { h: "自我修正循环（self-correction）", body: `
+        <pre>for attempt in range(_MAX_RETRIES + 1):  # 共 3 次机会
+    if last_err is not None:
+        # 把上次错误塞进对话，让模型看到自己上次错在哪
+        messages.append({"role": "user", "content":
+            f"上一次你的回答有问题: {last_err}\\n请重新输出..."})
+    resp = client.chat.completions.create(...)
+    try:
+        data = json.loads(raw)              # JSON 解析
+        params = SimulationParams(**data)   # Pydantic 校验
+        return params.model_dump()           # 成功
+    except (JSONDecodeError, ValidationError) as e:
+        last_err = str(e)
+        continue                              # 重试</pre>
+        <p>这种"把错误反馈给模型自己改"的模式，比无脑重试有效得多。</p>
+      `},
+      { h: "DeepSeek 关键参数", body: `
+        <ul>
+          <li><code>response_format={"type": "json_object"}</code> — 强制输出合法 JSON，不会夹 markdown 代码围栏</li>
+          <li><code>temperature=0.0</code> — 解析任务不需要创造性</li>
+          <li>用 OpenAI SDK，因为 DeepSeek 兼容 OpenAI 协议（同一个 client，换 base_url）</li>
+        </ul>
+      `},
+      { h: "CLI", body: `
+        <pre># 单句解析
+python -m agents.intent_parser "芯片 20 瓦，风速 1.5 m/s"
+
+# 跑 3 句自测试
+python -m agents.intent_parser
+# → 标准 / 单位换算 / 全默认值 三种 case 都过</pre>
+      `},
+    ]
+  },
+
+  day5: {
+    title: "📈 Day 5 · 结果分析",
+    path: "agents/result_analyzer.py",
+    sections: [
+      { h: "做什么", body: `
+        <p>仿真跑完后, 数字 dict 翻译成"人能看懂的报告":</p>
+        <ul>
+          <li>📊 温度云图 PNG → <code>reports/run_&lt;时间&gt;/temperature_contour.png</code></li>
+          <li>📝 中文文字报告 → <code>reports/run_&lt;时间&gt;/report.txt</code></li>
+          <li>📦 结构化 result.json → 给 Day 6 LangGraph 下游节点用</li>
+        </ul>
+        <p>同时给出"是否超过 85°C 警戒线" 的判定。</p>
+      `},
+      { h: "🔑 核心机制：analyzer hook", body: `
+        <p>问题：Day 3 的 <code>run_simulation()</code> 在 finally 里 <code>session.exit()</code>, 等它返回时 session 已经死了 — 没法再抓云图。</p>
+        <p>解法：给 <code>run_simulation</code> 加一个 <strong>analyzer hook</strong> 参数, 在 exit 之前调它, 把活的 session 借给它。</p>
+        <pre>def run_simulation(params, analyzer=None):
+    ...
+    # iterate, query temperature ...
+    if analyzer is not None:
+        try:
+            ret = analyzer(session, partial_result)
+            if isinstance(ret, dict):
+                analyzer_extra = ret  # 合并进 result
+        except Exception as e:
+            # 分析失败不能拖垮仿真 - 数字都已经算出来了
+            print(f"[WARN] analyzer 抛异常: {e}", file=sys.stderr)
+    # finally: session.exit()</pre>
+        <p>设计取舍：<strong>analyzer 内部异常不让 run_simulation 整体失败</strong> — 分析失败比仿真失败"轻"得多。云图画不出来不该把数字也丢了。</p>
+      `},
+      { h: "两个公开 API", body: `
+        <table class="func">
+          <tr><th>函数</th><th>需要 session?</th><th>用法</th></tr>
+          <tr><td><code>summarize(run_summary, params)</code></td><td>不要</td><td>纯 Python 拼文字 + 警戒线判定。单测 / 事后补报告用。</td></tr>
+          <tr><td><code>analyze(session, params, summary)</code></td><td>要</td><td>summarize 的超集 + 抓云图 + 写文件。run_simulation hook 用。</td></tr>
+        </table>
+      `},
+      { h: "为什么文字总结不调 LLM？", body: `
+        <p>架构决策 #1：<strong>LLM 只出 JSON, 不出自由文本</strong>。</p>
+        <ul>
+          <li>W1 阶段总结结构稳定（温度 + 警戒线判定 + 余量）, 模板能写就别让 LLM 编</li>
+          <li>模板渲染 ~1ms, 调 LLM ~2 秒 + 网络 + 收费 + 偶尔幻觉</li>
+          <li>W2/W3 加多轮迭代后, "建议下一轮怎么改" 那部分才需要 LLM (因为推理空间太大)</li>
+        </ul>
+      `},
+      { h: "云图生成的双轨 fallback", body: `
+        <p>PyFluent 的 graphics API 是版本最飘忽的部分(每个小版本都改)。所以走 fallback chain：</p>
+        <pre>路径 a: modern settings API
+  graphics.contour["day5_temp"] = {field: "temperature", surfaces_list: [...]}
+  contour.display() + picture.save_picture(...)
+
+路径 b: TUI 命令(如果 modern 失败)
+  /display/objects/create contour day5_temp_tui ...
+  /display/save-picture path.png
+
+路径 c: 都失败 → 写 "PNG 跳过" 到 report.txt
+  数字和 txt 还是会照常出来</pre>
+        <p>同样 surfaces_list 也准备 4 组候选名（不同案例命名不一样）：</p>
+        <ul>
+          <li><code>["symmetry-xyplane", "wall-elbow", "outlet"]</code> — mixing-elbow 标准命名</li>
+          <li><code>["symmetry", "wall", "outlet"]</code> — 通用</li>
+          <li><code>["wall-fluid", "outlet"]</code> — 一些案例的命名</li>
+          <li><code>["()"]</code> — 兜底全选</li>
+        </ul>
+      `},
+      { h: "报告样例 (mixing-elbow 上)", body: `
+        <pre>==========================================================
+SciAgent-Fluent 仿真结果报告 (Day 5)
+==========================================================
+
+[输入参数]
+  芯片功耗       : 15.0 W
+  入口风速       : 2.0 m/s
+  最大迭代步数   : 200
+
+[求解结果]
+  状态           : 收敛
+  实际迭代步数   : 200
+  全域最高温度   : 313.15 K  (40.00 °C)
+  出口平均温度   : 295.71 K  (22.56 °C)
+  耗时           : 78.3 秒
+
+[警戒线判定]
+  判定: 最高温度未超过 85 °C 警戒线, 余量 +45.00 °C, 设计安全。
+说明: 当前是 mixing-elbow 基准案例(冷热水混合管), 没有发热源,
+最高温度被 hot-inlet 边界条件 313.15 K 钉住, 不会超过警戒线。
+W2 换共轭传热案例后, chip_power 才会真正驱动 max_temp 上升。
+
+生成时间: 2026-04-25 21:41:46
+==========================================================</pre>
+        <p>注意末尾那段 mixing-elbow 物理说明 — 答辩时不用临场组织语言，模板里直接写好了。</p>
+      `},
+      { h: "三种自测试场景（_selftest）", body: `
+        <table class="func">
+          <tr><th>场景</th><th>max_temp</th><th>期望判定</th></tr>
+          <tr><td>典型 mixing-elbow</td><td>40 °C</td><td>within_spec=True, margin=+45°C</td></tr>
+          <tr><td>假想芯片超温</td><td>95 °C</td><td>within_spec=False, margin=-10°C</td></tr>
+          <tr><td>求解失败 (NaN)</td><td>NaN</td><td>within_spec=False, margin=None</td></tr>
+        </table>
+        <p>跑：<code>python -m agents.result_analyzer</code> → 1 秒内 PASS, 不需要 Fluent。</p>
+        <p>完整版（真起 Fluent，2-5 分钟）：<code>python -m agents.result_analyzer --full</code></p>
+      `},
+    ]
+  },
+
+  day6: {
+    title: "🕸️ Day 6 · LangGraph 串联",
+    path: "graph/pipeline.py + run.py",
+    sections: [
+      { h: "做什么", body: `
+        <p>把 Day 4 / Day 3 / Day 5 三件部件串成一条端到端流水线。一条命令跑完:</p>
+        <pre>python run.py --query "芯片功率 15W, 风速 2m/s, 给我温度云图"
+# 自动: intent (LLM) → simulate (Fluent) → report (打印)
+# 出 PNG + txt + JSON, 终端打总结</pre>
+        <p>这就是 W1 MVP 的验收标准: 一句中文进去, 仿真结果出来。</p>
+      `},
+      { h: "🔑 核心: 节点 + 边 + 状态", body: `
+        <pre>START
+  ↓
+[intent]    把中文 query 翻成 params dict (DeepSeek)
+  ↓
+[simulate]  跑 Fluent + analyzer hook 出云图/报告
+  ↓
+[report]    读 state, 打印总结 + 列出产物
+  ↓
+END</pre>
+        <p>每个节点都是一个函数, 输入 state, 返回要 merge 进 state 的 dict。LangGraph 自动合并, 不需要你手动 mutate 全局变量。</p>
+      `},
+      { h: "为什么不直接 a→b→c 三行代码？", body: `
+        <p>朴素写法当然能跑:</p>
+        <pre>params  = parse_intent(query)
+summary = run_simulation(params, analyzer=...)
+print(summary["summary_text"])</pre>
+        <p>但一旦要做下面这些事, 线性硬编码就要重写:</p>
+        <ul>
+          <li><strong>多轮迭代</strong> (W3): 温度超标 → 调风速 → 再仿真 → 再判定</li>
+          <li><strong>检查点恢复</strong> (设计思路 §6.4): 20 分钟仿真崩了从中间继续</li>
+          <li><strong>分支路径</strong>: 根据 LLM 输出选不同 case 文件</li>
+        </ul>
+        <p>LangGraph 的"节点 + 边 + 状态"模型把这些扩展点提前留好。<strong>架构决策 #4</strong> 就是为这个铺垫的。</p>
+      `},
+      { h: "State 的设计", body: `
+        <pre>class GraphState(TypedDict, total=False):
+    query: str             # 用户输入
+    dry_run: bool          # 测试用, 跳过 Fluent
+    params: dict | None    # intent 节点产出
+    result: dict | None    # simulate 节点产出 (含 analyzer 加的字段)
+    error: str | None      # 任何节点出错时填这里</pre>
+        <p>设计要点:</p>
+        <ul>
+          <li><strong>不放活对象</strong> (session、文件句柄) — 全是可序列化的 dict / 基本类型, 这样 W3 加 checkpoint 时 JSON 一序列化就能恢复</li>
+          <li><strong>错误隔离</strong> — 节点出错写 <code>state.error</code>, 后续节点检测到就跳过, 不让一个节点崩掉拖垮整个流水线</li>
+          <li><strong>用 TypedDict 不用 Pydantic</strong> — LangGraph 用 dict 协议合并状态, TypedDict 只给类型检查用, 没运行时校验开销</li>
+        </ul>
+      `},
+      { h: "错误传递: 不抛异常, 写状态", body: `
+        <pre>def intent_node(state):
+    if state.get("error"):
+        return {}                                 # 上游已 error, 跳过
+    try:
+        params = parse_intent(state["query"])
+        return {"params": params}
+    except Exception as e:
+        return {"error": f"intent 失败: {e}"}      # 写 state, 不 raise</pre>
+        <p>好处: 仿真崩了, "打印报告"节点还能跑, 给用户看到错误信息, 而不是程序崩掉一脸天书。</p>
+      `},
+      { h: "--dry-run 模式 (测拓扑用)", body: `
+        <p>真起 Fluent 一次要 3-5 分钟, 调 graph 结构时太慢。所以加了 dry-run:</p>
+        <pre>python run.py --query "..." --dry-run    # 5 秒返回</pre>
+        <p>simulate 节点检测到 dry_run=True, 跳过真 Fluent, 用一组假数字走 result_analyzer 的<strong>纯 Python 部分</strong> (summarize 函数, 不需要 session)。</p>
+        <p>这样 intent 节点的 LLM 是真调的, summarize 模板渲染是真跑的, 只跳过最重的 Fluent。能验证拓扑通了, 也能本地 CI 用。</p>
+      `},
+      { h: "为什么 W1 阶段不让 LLM 决策？", body: `
+        <p>架构决策 #1: <strong>LLM 只出 JSON, 不写代码也不做控制流</strong>。</p>
+        <p>W1 MVP 的拓扑是固定的 intent → simulate → report, 边写死, LLM 不参与"下一步走哪个节点"的决策。LLM 只在 intent 节点里把中文翻成 JSON。</p>
+        <p>W3 才会加 iter_planner 节点, 让 LLM 看残差决定"再来一轮还是输出"。那时也不是让 LLM "选边"——LangGraph 会从 LLM 返回的 JSON 里读一个字段, 用普通 if/else 选边。</p>
+      `},
+      { h: "三层薄壳", body: `
+        <table class="func">
+          <tr><th>文件</th><th>职责</th><th>行数</th></tr>
+          <tr><td><code>run.py</code></td><td>argparse + 调 run_pipeline。CLI 入口。</td><td>~80 行</td></tr>
+          <tr><td><code>graph/pipeline.py</code></td><td>3 个节点函数 + build_graph + run_pipeline + selftest</td><td>~280 行</td></tr>
+          <tr><td><code>graph/__init__.py</code></td><td>空文件 (package 标记)</td><td>0 行</td></tr>
+        </table>
+        <p>把 CLI (run.py) 和图构建 (pipeline.py) 分开: 单元测试可以 import run_pipeline 直接调, 不用 subprocess; 以后接 Web 前端复用同一个 run_pipeline。</p>
+      `},
+      { h: "三种调用方式", body: `
+        <pre># 1. 真跑 Fluent (W1 验收命令, 3-5 分钟)
+python run.py --query "芯片功率 15W, 风速 2m/s, 给我温度云图"
+
+# 2. dry-run, 测流水线拓扑 (5 秒)
+python run.py --query "..." --dry-run
+
+# 3. 跑 3 句样本自测试 (dry-run + 多 case)
+python run.py --selftest
+# 等价于:
+python -m graph.pipeline</pre>
+      `},
+    ]
+  },
+
+  output: {
+    title: "📊 result dict (输出契约)",
+    path: "由 fluent_wrapper.run_simulation() 返回",
+    sections: [
+      { h: "完整字段", body: `
+        <pre>{
+    "max_temp_K": 313.15,         # 全域最高温度（K）
+    "max_temp_C": 40.00,           # 摄氏度
+    "outlet_avg_temp_K": 295.71,   # 出口质量加权平均温度
+    "outlet_avg_temp_C": 22.56,
+    "converged": true,             # 收敛性（Day 5 会做真正的残差判定）
+    "iterations": 200,             # 实际请求步数
+    "elapsed_seconds": 78.3,       # 全流程耗时
+    "velocity_applied": true,      # 入口速度有没有真改进去
+    "params_echo": {...},           # 原样回传输入参数，方便排错
+}</pre>
+      `},
+      { h: "为什么 max_temp 和 outlet_avg_temp 都要？", body: `
+        <ul>
+          <li><strong>max_temp</strong>：W1 手册要求"输出最高温度"，答辩时要讲。</li>
+          <li><strong>outlet_avg_temp</strong>：用于判定"参数有没有生效"（max_T 在 mixing-elbow 上是固定的边界值，不会变）。</li>
+        </ul>
+      `},
+      { h: "Day 5 已增字段 (analyzer hook 注入)", body: `
+        <pre>{
+    ...原有数字字段...
+    "limit_K": 358.15,                # 警戒线 (K)
+    "limit_C": 85.00,                  # 警戒线 (°C)
+    "within_spec": true,               # 是否未超
+    "margin_C": 45.00,                 # 余量 (°C)
+    "summary_text": "...",              # 中文总结
+    "output_dir": ".../reports/run_xxx",
+    "contour_image_path": ".../contour.png",  # PNG 失败时为 null
+    "report_text_path": ".../report.txt",
+    "result_json_path": ".../result.json",
+    "contour_skipped_reason": null,    # PNG 失败原因
+    "generated_at": "2026-04-25T21:41:46",
+}</pre>
+      `},
+      { h: "下一步（Day 6）", body: `
+        <p>LangGraph 把 intent → run → analyze 串起来：</p>
+        <pre>python run.py --query "芯片 15W, 风速 2m/s, 给我温度云图"
+# 自动: 解析 → 跑仿真 → 出 PNG + 报告
+# 端到端 demo, W1 MVP 完成</pre>
+      `},
+    ]
+  },
+};
+
+function openModal(key) {
+  const d = DETAILS[key];
+  if (!d) return;
+  let html = `<h2>${d.title}</h2>`;
+  html += `<div class="path-bar">${d.path}</div>`;
+  for (const s of d.sections) {
+    html += `<h3>${s.h}</h3>${s.body}`;
+  }
+  document.getElementById("modal-content").innerHTML = html;
+  document.getElementById("modal-bg").classList.add("open");
+}
+function closeModal() {
+  document.getElementById("modal-bg").classList.remove("open");
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+// fill TODAY
+document.body.innerHTML = document.body.innerHTML.replace("{{TODAY}}", new Date().toISOString().slice(0,10));
+</script>
+</body>
+</html>

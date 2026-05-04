@@ -1,0 +1,22 @@
+{
+  "case_id": "manifold_high_power_50w",
+  "title": "排气歧管中功率芯片散热",
+  "description": "manifold + chip_power=50W. 比 15W case 温度高 ~390 K, 用于 W2 chip_power 单调性 demo.",
+  "tags": ["manifold", "medium_power", "demo", "chip_50w"],
+  "case_mode": "manifold_cht",
+  "baseline_params": {
+    "chip_power_watts": 50.0,
+    "inlet_velocity_ms": 1.0,
+    "max_iterations": 150,
+    "chip_material": "silicon",
+    "limit_C": 1500.0,
+    "mesh_quality": "medium"
+  },
+  "expected_kpi": {
+    "max_temp_K_approx": 1361,
+    "max_temp_C_approx": 1088,
+    "elapsed_seconds_approx": 40,
+    "within_spec_expected": true
+  },
+  "good_for_query_keywords": ["50", "50W", "中功率", "manifold", "高温", "演示对比"]
+}

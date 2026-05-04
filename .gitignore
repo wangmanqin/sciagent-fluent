@@ -1,0 +1,78 @@
+# SciAgent-Fluent .gitignore
+# ==========================
+# 写法说明 (面试可答辩):
+#   - 每条都列了"为什么忽略"。删了任何一条都要先想想会不会泄露密钥/灌大文件进 git。
+#   - .gitignore 只对未被 git 跟踪的文件生效。如果某个文件已经 git add 过了,
+#     要先 `git rm --cached <文件>` 才能让规则生效。
+
+# === 0. 内部文档 (不公开) ===
+W1_执行手册.md
+设计思路.md
+演示脚本.md
+演示脚本_完整版.md
+
+# === 1. 密钥 / 配置 (重中之重) ===
+# config.yaml 里有 DeepSeek API key 明文, 进了 git 历史就再也"撤不干净"了。
+# 即使 force-push 覆盖, 别人 fork / 镜像里仍可能留存。
+# 团队同事 clone 后照 config.example.yaml 自填即可。
+config.yaml
+*.env
+.env*
+
+# === 2. Python 虚拟环境 / 缓存 ===
+# venv 体积大 (约 600 MB), 而且本机绝对路径写死在 activate 脚本里,
+# 上传后别人也用不了——靠 requirements.txt 重建才是工程做法。
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === 3. Fluent 运行时垃圾 ===
+# Fluent 每次启动都会在工作目录扔 transcript (.trn) 和 cleanup-*.bat,
+# 单个最大 1.5 MB, 跑十几次仿真就上百 MB。这些是"运行痕迹", 不是源码。
+fluent-*.trn
+fluent-*-error.log
+cleanup-fluent-*.bat
+*.cas.h5.gz
+*.dat.h5
+*.cas.h5         # 网格/case 文件可达数十 MB, 通过 PyFluent download_file 自取
+*.dat            # 求解数据
+*.msh            # 网格
+
+# === 4. Day 5 调试中间文件 ===
+# 这些是早期开发时手写的"打印到磁盘"调试输出, 已被 reports/ 里的正式产物取代。
+_day2_max_temp.txt
+_wrapper_*.txt
+
+# === 5. 仿真产出 (大文件 + 时间戳目录) ===
+# reports/run_<时间戳>/ 每次跑都会新建, 包含 PNG / txt / json。
+# 演示用的样本应该单独放进 docs/sample_run/ 之类的目录, 不是塞 git 根。
+reports/
+/cases/
+
+# === 5b. 运行时数据库 / 调试脚本 ===
+.langgraph_checkpoint.sqlite
+test_deepseek.py
+image/设计思路/
+
+# === 6. IDE / OS ===
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# === 7. PyFluent 默认下载目录 ===
+# PyFluent 的 examples 模块下载过的网格会缓存在用户主目录, 但有些版本会落到 cwd。
+download_files/
+
+# === 例外: 必须保留的样本 ===
+# 演示用截图保留 (双感叹号"重新包含")
+!docs/sample_run/
+!docs/screenshots/
